@@ -151,7 +151,7 @@ func main() {
 			},
 			Action: func(c *cli.Context) error {
 				if len(c.GlobalStringSlice("additional-gossfiles")) > 0 {
-					fmt.Printf("Render does not work with additional-gossfiles")
+					fmt.Printf("Render does not work with additional-gossfiles\n")
 					os.Exit(1)
 				}
 				fmt.Print(goss.RenderJSON(c))
