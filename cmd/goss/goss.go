@@ -28,7 +28,7 @@ func main() {
 			EnvVar: "GOSS_FILE",
 		},
 		cli.StringSliceFlag{
-			Name:   "additional-gossfiles, ga",
+			Name:   "additional-gossfiles, a",
 			Usage:  "Addtional goss files to read from for validate/serve",
 			EnvVar: "GOSS_ADDITIONAL_FILES",
 		},
