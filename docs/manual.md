@@ -56,7 +56,7 @@ COMMANDS:
 
 GLOBAL OPTIONS:
    --gossfile, -g "./goss.yaml"	Goss file to read from / write to [$GOSS_FILE]
-   --additional-gossfiles, -ag  Additional goss files to run 
+   --additional-gossfiles, -a   Additional goss files to run 
    --vars value                 json/yaml file containing variables for template [$GOSS_VARS]
    --package 			Package type to use [rpm, deb, apk, pacman]
    --help, -h			show help
@@ -74,6 +74,13 @@ The file to use when reading/writing tests. Use `-g -` to read from `STDIN`.
 Valid formats:
 * **YAML** (default)
 * **JSON**
+
+### -a additional_gossfile
+Additional files to read tests from. Not compatible with [render](#render).
+
+Behaves differently to [gossfile](#gossfile). This does not attempt to merge gossfiles together, so any tests that have the same ID will all execute instead of being overwritten.
+
+Multiple files can be specified using `-a file1.yaml -a file2.yaml`.
 
 ### --vars
 The file to read variables from when rendering gossfile [templates](#templates).
