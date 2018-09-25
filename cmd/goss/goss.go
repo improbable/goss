@@ -27,6 +27,11 @@ func main() {
 			Usage:  "Goss file to read from / write to",
 			EnvVar: "GOSS_FILE",
 		},
+		cli.StringSliceFlag{
+			Name:   "additional-gossfiles, ga",
+			Usage:  "Addtional goss files to read from for validate/serve",
+			EnvVar: "GOSS_ADDITIONAL_FILES",
+		},
 		cli.StringFlag{
 			Name:   "vars",
 			Usage:  "json/yaml file containing variables for template",
@@ -145,6 +150,10 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
+				if len(c.GlobalStringSlice("additional-gossfiles")) > 0 {
+					fmt.Printf("Render does not work with additional-gossfiles")
+					os.Exit(1)
+				}
 				fmt.Print(goss.RenderJSON(c))
 				return nil
 			},

@@ -56,6 +56,7 @@ COMMANDS:
 
 GLOBAL OPTIONS:
    --gossfile, -g "./goss.yaml"	Goss file to read from / write to [$GOSS_FILE]
+   --additional-gossfiles, -ag  Additional goss files to run 
    --vars value                 json/yaml file containing variables for template [$GOSS_VARS]
    --package 			Package type to use [rpm, deb, apk, pacman]
    --help, -h			show help

@@ -17,37 +17,47 @@ import (
 	"github.com/urfave/cli"
 )
 
-func getGossConfig(c *cli.Context) GossConfig {
+func getGossConfigs(c *cli.Context) []GossConfig {
 	// handle stdin
 	var fh *os.File
 	var path, source string
-	var gossConfig GossConfig
+	var gossConfigs []GossConfig
 	TemplateFilter = NewTemplateFilter(c.GlobalString("vars"))
-	specFile := c.GlobalString("gossfile")
-	if specFile == "-" {
-		source = "STDIN"
-		fh = os.Stdin
-		data, err := ioutil.ReadAll(fh)
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+	baseSpecFile := c.GlobalString("gossfile")
+	additionalSpecFiles := c.GlobalStringSlice("additional-gossfiles")
+	specFiles := append(additionalSpecFiles, baseSpecFile)
+	for _, specFile := range specFiles {
+		var gossConfig GossConfig
+		if specFile == "-" {
+			source = "STDIN"
+			fh = os.Stdin
+			data, err := ioutil.ReadAll(fh)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+			OutStoreFormat = getStoreFormatFromData(data)
+			gossConfig = ReadJSONData(data, true)
+		} else {
+			source = specFile
+			path = filepath.Dir(specFile)
+			OutStoreFormat = getStoreFormatFromFileName(specFile)
+			gossConfig = ReadJSON(specFile)
 		}
-		OutStoreFormat = getStoreFormatFromData(data)
-		gossConfig = ReadJSONData(data, true)
-	} else {
-		source = specFile
-		path = filepath.Dir(specFile)
-		OutStoreFormat = getStoreFormatFromFileName(specFile)
-		gossConfig = ReadJSON(specFile)
+		gossConfig = mergeJSONData(gossConfig, 0, path)
+		gossConfigs = append(gossConfigs, gossConfig)
 	}
 
-	gossConfig = mergeJSONData(gossConfig, 0, path)
-
-	if len(gossConfig.Resources()) == 0 {
+	var resourceCount int
+	for _, gossConfig := range gossConfigs {
+		resourceCount += len(gossConfig.Resources())
+	}
+	if resourceCount == 0 {
 		fmt.Printf("Error: found 0 tests, source: %v\n", source)
 		os.Exit(1)
 	}
-	return gossConfig
+
+	return gossConfigs
 }
 
 func getOutputer(c *cli.Context) outputs.Outputer {
@@ -66,7 +76,7 @@ func Validate(c *cli.Context, startTime time.Time) {
 		FormatOptions: c.StringSlice("format-options"),
 	}
 
-	gossConfig := getGossConfig(c)
+	gossConfigs := getGossConfigs(c)
 	sys := system.New(c)
 	outputer := getOutputer(c)
 
@@ -75,7 +85,7 @@ func Validate(c *cli.Context, startTime time.Time) {
 	i := 1
 	for {
 		iStartTime := time.Now()
-		out := validate(sys, gossConfig, c.Int("max-concurrent"))
+		out := validate(sys, gossConfigs, c.Int("max-concurrent"))
 		exitCode := outputer.Output(os.Stdout, out, iStartTime, outputConfig)
 		if retryTimeout == 0 || exitCode == 0 {
 			os.Exit(exitCode)
@@ -94,13 +104,15 @@ func Validate(c *cli.Context, startTime time.Time) {
 	}
 }
 
-func validate(sys *system.System, gossConfig GossConfig, maxConcurrent int) <-chan []resource.TestResult {
+func validate(sys *system.System, gossConfigs []GossConfig, maxConcurrent int) <-chan []resource.TestResult {
 	out := make(chan []resource.TestResult)
 	in := make(chan resource.Resource)
 
 	go func() {
-		for _, t := range gossConfig.Resources() {
-			in <- t
+		for _, gossConfig := range gossConfigs {
+			for _, t := range gossConfig.Resources() {
+				in <- t
+			}
 		}
 		close(in)
 	}()
