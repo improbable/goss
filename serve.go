@@ -22,7 +22,7 @@ func Serve(c *cli.Context) {
 
 	health := healthHandler{
 		c:             c,
-		gossConfig:    getGossConfig(c),
+		gossConfigs:   getGossConfigs(c),
 		sys:           system.New(c),
 		outputer:      getOutputer(c),
 		cache:         cache,
@@ -44,7 +44,7 @@ type res struct {
 }
 type healthHandler struct {
 	c             *cli.Context
-	gossConfig    GossConfig
+	gossConfigs   []GossConfig
 	sys           *system.System
 	outputer      outputs.Outputer
 	cache         *cache.Cache
@@ -74,7 +74,7 @@ func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.sys = system.New(h.c)
 			log.Printf("%v: Stale cache, running tests", r.RemoteAddr)
 			iStartTime := time.Now()
-			out := validate(h.sys, h.gossConfig, h.maxConcurrent)
+			out := validate(h.sys, h.gossConfigs, h.maxConcurrent)
 			var b bytes.Buffer
 			exitCode := h.outputer.Output(&b, out, iStartTime, outputConfig)
 			resp = res{exitCode: exitCode, b: b}
